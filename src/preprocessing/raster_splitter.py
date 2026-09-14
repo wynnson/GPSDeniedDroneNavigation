@@ -4,6 +4,7 @@ import rasterio
 import numpy as np
 
 from torch import nn
+from collections.abc import Iterable
 from rasterio.windows import Window, bounds
 from rasterio.warp import transform_bounds
 from pathlib import Path
@@ -15,7 +16,7 @@ def iterate_raster(
     path: Path,
     window_size: int,
     dst_crs: str = "EPSG:4326"
-):
+) -> Iterable[tuple[np.ndarray, dict]]:
     """
     Slides window through original raster, chopping it up
     into tiny pieces to embed.
@@ -60,7 +61,7 @@ def iterate_raster(
         raise RuntimeError(f"Something went wrong: {path}") from e
 
 
-def preprocess_tile_batch_dinov2(tile_batch, device):
+def preprocess_tile_batch_dinov2(tile_batch, device) -> torch.Tensor:
     """Normalizes batch tiles to what dinov2 expects."""
     size = (518, 518) # DINO v2 native
 
@@ -85,7 +86,7 @@ def flush(
     model: nn.Module,
     writer: TileWriter,
     device: str
-):
+) -> None:
     """Flush the batch to DB."""
     if not tile_batch or not metadata_batch:
         return
@@ -113,7 +114,7 @@ def embed_raster(
     batch_size: int = 32,
     dst_crs: str = "EPSG:4326",
     device: str ="cpu",
-):
+) -> None:
     path = Path(file_path)
 
     if not path.exists():
@@ -121,9 +122,6 @@ def embed_raster(
 
     tile_batch = []
     metadata_batch = []
-
-    model.eval()
-    model.to(device)
 
     for tile, metadata in iterate_raster(path, window_size, dst_crs):
         tile_batch.append(tile)

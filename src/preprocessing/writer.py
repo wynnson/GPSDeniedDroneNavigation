@@ -6,16 +6,17 @@ from pathlib import Path
 
 
 class TileWriter:
+    """Helper class that performs IO operations on DB (SQL + FAISS)"""
     def __init__(
         self,
-        db_path: Path,
-        faiss_path: Path,
+        db_path: str,
+        faiss_path: str,
         embedding_dim: int
     ):
-        self.db_path = db_path
-        self.faiss_path = faiss_path
+        self.db_path = Path(db_path)
+        self.faiss_path = Path(faiss_path)
 
-        self.connection = sqlite3.connect(db_path)
+        self.connection = sqlite3.connect(self.db_path)
         self.cursor = self.connection.cursor()
 
         self.cursor.execute("""
@@ -31,8 +32,8 @@ class TileWriter:
         self.cursor.execute("SELECT COALESCE(MAX(id), -1) FROM tiles")
         self.next_id = self.cursor.fetchone()[0] + 1
 
-        if faiss_path.exists():
-            self.index = faiss.read_index(str(faiss_path))
+        if self.faiss_path.exists():
+            self.index = faiss.read_index(str(self.faiss_path))
         else:
             self.index = faiss.IndexFlatIP(embedding_dim)
 
@@ -40,7 +41,8 @@ class TileWriter:
         self,
         metadata_batch: list[dict],
         embeddings: np.ndarray,
-    ):
+    ) -> None:
+        """Writes metadata and embeddings to DB."""
         embeddings = np.ascontiguousarray(embeddings, dtype=np.float32)
         faiss.normalize_L2(embeddings)
 
@@ -70,7 +72,8 @@ class TileWriter:
 
         self.index.add(embeddings)
 
-    def close(self):
+    def close(self) -> None:
+        """Cleans up connections."""
         self.connection.commit()
         faiss.write_index(self.index, str(self.faiss_path))
         self.cursor.close()

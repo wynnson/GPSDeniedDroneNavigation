@@ -2,10 +2,15 @@ import torch
 
 
 def get_device() -> str:
+    """Get device"""
     if torch.cuda.is_available():
-        return "cuda"
+        device = "cuda"
 
-    if torch.backends.mps.is_available():
-        return "mps"
+    elif torch.backends.mps.is_available():
+        device = "mps"
 
-    return "cpu"
+    else:
+        device = "cpu"
+
+    print(f"Using device: {device}")
+    return device

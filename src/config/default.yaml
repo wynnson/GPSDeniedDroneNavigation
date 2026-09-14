@@ -1,12 +1,15 @@
 model:
+  source: torch_hub
+  repo: facebookresearch/dinov2
   name: dinov2_vits14
   embedding_dim: 384
 
 raster:
+  file_path: data/GT_NW.tif
   window_size: 512
   batch_size: 32
   dst_crs: EPSG:4326
 
 output:
-  db: tiles.db
-  faiss: tiles.faiss
+  db: data/tiles.db
+  faiss: data/tiles.faiss
