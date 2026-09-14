@@ -1,17 +1,19 @@
 from pathlib import Path
+from omegaconf import DictConfig
+
 from src.preprocessing.raster_splitter import embed_raster
 from src.preprocessing.writer import TileWriter
 from src.utils.device import get_device
 from src.utils.config import load_config
-from src.utils.model import load_model
+from src.utils.model import create_model
 from src.utils.decorators import performance
 
 
 @performance
-def main():
-    config = load_config(Path("src/config/default.yaml"))
+def preprocess(config: DictConfig):
+    """Runs the preprocessing pipeline."""
     device = get_device()
-    model = load_model(config, device)
+    model = create_model(config, device)
 
     writer = TileWriter(
         db_path=config.output.db,
@@ -27,7 +29,6 @@ def main():
             window_size=config.raster.window_size,
             batch_size=config.raster.batch_size,
             dst_crs=config.raster.dst_crs,
-            device=device
         )
 
     finally:
@@ -35,4 +36,6 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    config_path = Path("src/config/default.yaml")
+    config = load_config(config_path)
+    preprocess(config)

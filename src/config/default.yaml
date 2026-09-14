@@ -1,4 +1,5 @@
 model:
+  type: dinov2
   source: torch_hub
   repo: facebookresearch/dinov2
   name: dinov2_vits14
@@ -13,3 +14,6 @@ raster:
 output:
   db: data/tiles.db
   faiss: data/tiles.faiss
+
+inference:
+  top_k: 10

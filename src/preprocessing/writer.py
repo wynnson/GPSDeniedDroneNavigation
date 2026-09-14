@@ -22,10 +22,8 @@ class TileWriter:
         self.cursor.execute("""
             CREATE TABLE IF NOT EXISTS tiles (
                 id INTEGER PRIMARY KEY,
-                lon_left REAL,
-                lat_bottom REAL,
-                lon_right REAL,
-                lat_top REAL
+                center_lon REAL,
+                center_lat REAL
             )
         """)
 
@@ -51,10 +49,8 @@ class TileWriter:
         for metadata in metadata_batch:
             rows.append((
                 self.next_id,
-                metadata["lon_left"],
-                metadata["lat_bottom"],
-                metadata["lon_right"],
-                metadata["lat_top"],
+                metadata["center_lon"],
+                metadata["center_lat"],
             ))
 
             self.next_id += 1
@@ -62,12 +58,10 @@ class TileWriter:
         self.cursor.executemany("""
             INSERT OR IGNORE INTO tiles (
                 id,
-                lon_left,
-                lat_bottom,
-                lon_right,
-                lat_top
+                center_lon,
+                center_lat
             )
-            VALUES (?, ?, ?, ?, ?)
+            VALUES (?, ?, ?)
         """, rows)
 
         self.index.add(embeddings)

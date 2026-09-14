@@ -3,6 +3,9 @@ import torch
 from torch import nn
 from omegaconf import DictConfig
 
+from src.models.dinov2 import DinoV2
+from src.models.base import BaseModel
+
 
 def load_model(config: DictConfig, device: str) -> nn.Module:
     """Loads model based on config"""
@@ -22,3 +25,12 @@ def load_model(config: DictConfig, device: str) -> nn.Module:
     model.to(device)
     model.eval()
     return model
+
+
+def create_model(config: DictConfig, device: str) -> BaseModel:
+    raw_model = load_model(config, device)
+
+    if config.model.type == "dinov2":
+        return DinoV2(model=raw_model, device=device)
+
+    raise ValueError(f"Unsupported model: {config.model.type}")

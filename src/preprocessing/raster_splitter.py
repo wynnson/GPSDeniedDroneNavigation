@@ -1,14 +1,12 @@
-import torch
-import torch.nn.functional as F
 import rasterio
 import numpy as np
 
-from torch import nn
 from collections.abc import Iterable
 from rasterio.windows import Window, bounds
 from rasterio.warp import transform_bounds
 from pathlib import Path
 
+from src.models.base import BaseModel
 from src.preprocessing.writer import TileWriter
 
 
@@ -48,11 +46,12 @@ def iterate_raster(
                         src.crs, dst_crs, left, bottom, right, top
                     )
 
+                    center_lon = (lon_left + lon_right) / 2
+                    center_lat = (lat_bot + lat_top) / 2
+
                     metadata = {
-                        "lon_left": lon_left,
-                        "lat_bottom": lat_bot,
-                        "lon_right": lon_right,
-                        "lat_top": lat_top
+                        "center_lon": center_lon,
+                        "center_lat": center_lat,
                     }
 
                     yield tile, metadata
@@ -61,31 +60,11 @@ def iterate_raster(
         raise RuntimeError(f"Something went wrong: {path}") from e
 
 
-def preprocess_tile_batch_dinov2(tile_batch, device) -> torch.Tensor:
-    """Normalizes batch tiles to what dinov2 expects."""
-    size = (518, 518) # DINO v2 native
-
-    # Imagenet defaults
-    mean = torch.tensor([0.485, 0.456, 0.406], device=device).view(1, 3, 1, 1)
-    std = torch.tensor([0.229, 0.224, 0.225], device=device).view(1, 3, 1, 1)
-
-    batch = torch.from_numpy(np.stack(tile_batch)).float().to(device) / 255.0
-    batch = F.interpolate(
-        batch,
-        size=size,
-        mode="bilinear",
-        align_corners=False
-    )
-
-    return (batch - mean) / std
-
-
 def flush(
     tile_batch: list[np.ndarray],
     metadata_batch: list[dict],
-    model: nn.Module,
+    model: BaseModel,
     writer: TileWriter,
-    device: str
 ) -> None:
     """Flush the batch to DB."""
     if not tile_batch or not metadata_batch:
@@ -94,26 +73,20 @@ def flush(
     if len(tile_batch) != len(metadata_batch):
         raise RuntimeError("Batch sizes do not match")
     
-    normalized = preprocess_tile_batch_dinov2(tile_batch, device=device)
-
-    with torch.inference_mode():
-        embeddings = model(normalized)
-
-    embeddings = embeddings.cpu().numpy()
+    embeddings = model.embed_batch(tile_batch)
     writer.write_batch(metadata_batch, embeddings)
 
     tile_batch.clear()
     metadata_batch.clear()
-    
+
 
 def embed_raster(
     file_path: str,
-    model: nn.Module,
+    model: BaseModel,
     writer: TileWriter,
     window_size: int = 512,
     batch_size: int = 32,
     dst_crs: str = "EPSG:4326",
-    device: str ="cpu",
 ) -> None:
     path = Path(file_path)
 
@@ -133,7 +106,6 @@ def embed_raster(
                 metadata_batch=metadata_batch,
                 model=model,
                 writer=writer,
-                device=device
             )
 
     flush(
@@ -141,5 +113,4 @@ def embed_raster(
         metadata_batch=metadata_batch,
         model=model,
         writer=writer,
-        device=device
     )
