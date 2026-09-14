@@ -1,8 +1,11 @@
 .DS_Store
 .vscode
+
 *.db
+*.db-journal
 *.faiss
 *.tif
 
+.env
 .venv
 __pycache__/

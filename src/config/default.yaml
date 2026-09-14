@@ -1,0 +1,12 @@
+model:
+  name: dinov2_vits14
+  embedding_dim: 384
+
+raster:
+  window_size: 512
+  batch_size: 32
+  dst_crs: EPSG:4326
+
+output:
+  db: tiles.db
+  faiss: tiles.faiss

@@ -5,3 +5,4 @@ pysqlite3
 faiss-cpu
 torch
 opencv-python
+PyYAML
