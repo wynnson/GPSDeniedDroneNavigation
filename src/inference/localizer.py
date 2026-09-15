@@ -11,6 +11,7 @@ from src.utils.model import create_model
 from src.utils.config import load_config
 from src.utils.device import get_device
 from src.utils.decorators import performance
+from src.utils.distance import haversine_distance
 
 import faiss # NEED THIS BELOW TORCH IMPORTS!!
 
@@ -26,6 +27,10 @@ class Localizer:
         self.device = device
         self.model = create_model(config, device)
         self.k = config.inference.top_k
+        self.dist_epsilon = config.inference.dist_epsilon
+        self.score_epsilon = config.inference.score_epsilon
+        self.beta = config.inference.beta
+        self.anchor_bonus_weight = config.inference.anchor_bonus_weight
 
         faiss_path = Path(config.output.faiss)
         db_path = Path(config.output.db)
@@ -55,7 +60,37 @@ class Localizer:
 
         return res
 
+    def estimate_position(self, predictions: list[tuple]) -> tuple[float, float]:
+        """Based on the top k predictions, make a location estimate"""
+        anchor = predictions[0][2]
+        candidates = []
+
+        for uid, score, coords in predictions:
+            dist = haversine_distance(anchor, coords)
+            if dist > self.dist_epsilon or score < self.score_epsilon:
+                continue
+
+            candidates.append((score, coords))
+
+        scores = np.array([score for score, _ in candidates])
+
+        logits = self.beta * (scores - scores.max())
+        logits[0] += self.anchor_bonus_weight
+
+        weights = np.exp(logits)    # softmax weighting 
+        weights /= weights.sum()
+
+        weighted_lon = 0.0
+        weighted_lat = 0.0
+
+        for weight, (_, (lon, lat)) in zip(weights, candidates):
+            weighted_lon += weight * lon
+            weighted_lat += weight * lat
+
+        return float(weighted_lon), float(weighted_lat)
+
     def get_coords(self, uid: int) -> tuple:
+        """Helper to fetch coords from db."""
         cursor = self.db_connection.cursor()
 
         cursor.execute("""

@@ -7,7 +7,7 @@ model:
 
 raster:
   file_path: data/GT_NW.tif
-  stride: 256
+  stride: 400
   window_size: 512
   batch_size: 32
   dst_crs: EPSG:4326
@@ -18,3 +18,7 @@ output:
 
 inference:
   top_k: 10
+  dist_epsilon: 100
+  score_epsilon: 0.72
+  beta: 10
+  anchor_bonus_weight: .5

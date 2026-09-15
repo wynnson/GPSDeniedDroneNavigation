@@ -5,6 +5,7 @@ import matplotlib.patches as patches
 
 from math import ceil
 from rasterio.windows import Window
+from rasterio.warp import transform_bounds
 from pathlib import Path
 
 
@@ -15,6 +16,7 @@ def show_all_tiles(
     path: Path,
     stride: int,
     window_size: int,
+    predictions: list[tuple] = None
 ):
     """Visualizes all tiles in a tif"""
     with rasterio.open(path) as src:
@@ -22,6 +24,12 @@ def show_all_tiles(
         image = np.moveaxis(image, 0, -1)   # H, W, C
         fig, ax = plt.subplots(figsize=(25,25))
         ax.imshow(image)
+
+        prediction_map = {}
+        if predictions is not None:
+            for prediction in predictions:
+                uid, score, _ = prediction
+                prediction_map[uid] = score
 
         tile_id = 0
         for r in range(0, src.height, stride):
@@ -35,24 +43,41 @@ def show_all_tiles(
                 center_x = c + width / 2
                 center_y = r + height / 2
 
+                if tile_id in prediction_map:
+                    rect_fill = True
+                    rect_facecolor = "red"
+                    rect_alpha = prediction_map[uid] ** 5 # score
+                    scatter_marker = "d"
+                    scatter_color = "orange"
+                    s = 500
+                else:
+                    rect_fill = False
+                    rect_facecolor = None
+                    rect_alpha = .9
+                    scatter_marker = "o"
+                    scatter_color = "cyan"
+                    s = 50
+
                 rect = patches.Rectangle(
                     (c, r),
                     width,
                     height,
                     edgecolor="black",
-                    alpha=0.9,
+                    alpha=rect_alpha,
                     linewidth=1.2,
+                    facecolor=rect_facecolor,
                     zorder=1,
-                    fill=False
+                    fill=rect_fill
                 )
+
                 ax.add_patch(rect)
 
                 ax.scatter(
                     center_x,
                     center_y,
-                    s=50,
-                    marker="o",
-                    color="cyan",
+                    s=s,
+                    marker=scatter_marker,
+                    color=scatter_color,
                     alpha=0.9,
                     zorder=10
                 )
@@ -81,6 +106,7 @@ def show_predictions(
     stride: int,
     window_size: int = 512
 ):
+    """Visualizes the top k tiles in prediction"""
     with rasterio.open(path) as src:
         tiles_per_row = ((src.width - window_size) // stride) + 1
 
@@ -124,3 +150,48 @@ def show_predictions(
 
         plt.tight_layout()
         plt.show()
+
+
+def show_estimated_position(
+    path: Path,
+    estimated_position: tuple[float, float], 
+    predictions: list[tuple],
+    score_epsilon: float,
+    dst_crs: str = "EPSG:4326",
+):
+    est_lon, est_lat = estimated_position
+
+    with rasterio.open(path) as src:
+        image = src.read(RGB)
+        image = np.moveaxis(image, 0, -1)
+        left, bottom, right, top = transform_bounds(
+            src.crs,
+            dst_crs,
+            *src.bounds
+        )
+
+    fig, ax = plt.subplots(figsize=(15, 15))
+    ax.imshow(image, extent=[left, right, bottom, top], origin="upper")
+
+    for uid, score, (lon, lat) in predictions:
+        if score < score_epsilon:
+            continue
+
+        ax.scatter(lon, lat, s=60, alpha=score, zorder=2, marker="d")
+        ax.plot(
+            [lon, est_lon],
+            [lat, est_lat],
+            alpha=score ** 4,
+            linewidth=1.5,
+            zorder=1
+        )
+        ax.text(lon, lat, str(uid), fontsize=8)
+
+    ax.scatter(
+        est_lon, est_lat, s=180, marker="^", zorder=3, label="Estimated Position", color="cyan"
+    )
+
+    ax.set_xlabel("Longitude")
+    ax.set_ylabel("Latitude")
+    ax.legend()
+    plt.show()

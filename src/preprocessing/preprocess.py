@@ -37,9 +37,9 @@ def preprocess(config: DictConfig):
         db_size = Path(config.output.db).stat().st_size
         faiss_size = Path(config.output.db).stat().st_size
 
-        print(f"SQLite DB: {db_size / (1024**2):.2f} MB")
-        print(f"FAISS index: {faiss_size / (1024**2):.2f} MB")
-        print(f"Total: {(db_size + faiss_size) / (1024**2):.2f} MB")
+        print(f"SQLite DB: {db_size / (1024**2):.4f} MB")
+        print(f"FAISS index: {faiss_size / (1024**2):.4f} MB")
+        print(f"Total: {(db_size + faiss_size) / (1024**2):.4f} MB")
 
 
 if __name__ == "__main__":
