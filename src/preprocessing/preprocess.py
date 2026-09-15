@@ -26,6 +26,7 @@ def preprocess(config: DictConfig):
             file_path=config.raster.file_path,
             model=model,
             writer=writer,
+            stride=config.raster.stride,
             window_size=config.raster.window_size,
             batch_size=config.raster.batch_size,
             dst_crs=config.raster.dst_crs,
@@ -33,6 +34,12 @@ def preprocess(config: DictConfig):
 
     finally:
         writer.close()
+        db_size = Path(config.output.db).stat().st_size
+        faiss_size = Path(config.output.db).stat().st_size
+
+        print(f"SQLite DB: {db_size / (1024**2):.2f} MB")
+        print(f"FAISS index: {faiss_size / (1024**2):.2f} MB")
+        print(f"Total: {(db_size + faiss_size) / (1024**2):.2f} MB")
 
 
 if __name__ == "__main__":

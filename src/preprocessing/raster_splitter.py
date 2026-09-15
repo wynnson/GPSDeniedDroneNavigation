@@ -12,6 +12,7 @@ from src.preprocessing.writer import TileWriter
 
 def iterate_raster(
     path: Path,
+    stride: int,
     window_size: int,
     dst_crs: str = "EPSG:4326"
 ) -> Iterable[tuple[np.ndarray, dict]]:
@@ -21,25 +22,18 @@ def iterate_raster(
     """
     try:
         with rasterio.open(path) as src:
-            for r in range(0, src.height, window_size):
-                for c in range(0, src.width, window_size):
+            for r in range(0, src.height, stride):
+                for c in range(0, src.width, stride):
                     width = min(window_size, src.width - c)
                     height = min(window_size, src.height - r)
+
+                    if width < window_size or height < window_size:
+                        continue
+
                     window = Window(c, r, width, height)
 
                     RGB = [1, 2, 3]
                     tile = src.read(RGB, window=window) # (c, h, w)
-
-                    pad_h = window_size - tile.shape[1]
-                    pad_w = window_size - tile.shape[2]
-
-                    if pad_h > 0 or pad_w > 0:
-                        tile = np.pad(
-                            tile, 
-                            pad_width=((0,0), (0, pad_h), (0, pad_w)), 
-                            mode="constant",
-                            constant_values=0
-                        )
 
                     left, bottom, right, top = bounds(window, src.transform)
                     lon_left, lat_bot, lon_right, lat_top = transform_bounds(
@@ -84,6 +78,7 @@ def embed_raster(
     file_path: str,
     model: BaseModel,
     writer: TileWriter,
+    stride: int = 256,
     window_size: int = 512,
     batch_size: int = 32,
     dst_crs: str = "EPSG:4326",
@@ -96,7 +91,12 @@ def embed_raster(
     tile_batch = []
     metadata_batch = []
 
-    for tile, metadata in iterate_raster(path, window_size, dst_crs):
+    for tile, metadata in iterate_raster(
+        path,
+        stride,
+        window_size,
+        dst_crs
+    ):
         tile_batch.append(tile)
         metadata_batch.append(metadata)
 

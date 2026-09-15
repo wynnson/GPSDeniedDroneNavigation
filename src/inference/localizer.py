@@ -10,11 +10,13 @@ from src.preprocessing.preprocess import preprocess
 from src.utils.model import create_model
 from src.utils.config import load_config
 from src.utils.device import get_device
+from src.utils.decorators import performance
 
 import faiss # NEED THIS BELOW TORCH IMPORTS!!
 
 
 # FAISS + PyTorch error otherwise bc of OpenMP versioning
+# See: https://github.com/ultralytics/yolov5/issues/5086
 os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
 
 
@@ -34,6 +36,7 @@ class Localizer:
         self.index = faiss.read_index(str(faiss_path))
         self.db_connection = sqlite3.connect(db_path)
 
+    @performance
     def predict(self, image: np.ndarray) -> list[tuple[int, float, tuple[float, float]]]:
         """Predicts passed frame image"""
         embedding = self.model.embed_image(image)
