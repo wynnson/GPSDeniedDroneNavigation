@@ -7,7 +7,7 @@ from rasterio.warp import transform_bounds
 from pathlib import Path
 
 from src.models.base import BaseModel
-from src.preprocessing.writer import TileWriter
+from src.database.tile_db_manager import TileDatabaseManager # CONTAINS FAISS
 
 
 def iterate_raster(
@@ -58,7 +58,7 @@ def flush(
     tile_batch: list[np.ndarray],
     metadata_batch: list[dict],
     model: BaseModel,
-    writer: TileWriter,
+    db_manager: TileDatabaseManager,
 ) -> None:
     """Flush the batch to DB."""
     if not tile_batch or not metadata_batch:
@@ -68,7 +68,7 @@ def flush(
         raise RuntimeError("Batch sizes do not match")
     
     embeddings = model.embed_batch(tile_batch)
-    writer.write_batch(metadata_batch, embeddings)
+    db_manager.write_batch(metadata_batch, embeddings)
 
     tile_batch.clear()
     metadata_batch.clear()
@@ -77,7 +77,7 @@ def flush(
 def embed_raster(
     file_path: str,
     model: BaseModel,
-    writer: TileWriter,
+    db_manager: TileDatabaseManager,
     stride: int = 256,
     window_size: int = 512,
     batch_size: int = 32,
@@ -105,12 +105,12 @@ def embed_raster(
                 tile_batch=tile_batch,
                 metadata_batch=metadata_batch,
                 model=model,
-                writer=writer,
+                db_manager=db_manager,
             )
 
     flush(
         tile_batch=tile_batch,
         metadata_batch=metadata_batch,
         model=model,
-        writer=writer,
+        db_manager=db_manager,
     )

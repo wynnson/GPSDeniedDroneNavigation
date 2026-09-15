@@ -1,12 +1,23 @@
+import os
 import sqlite3
-import faiss
 import numpy as np
 
 from pathlib import Path
 
+import faiss # NEED THIS BELOW ANY TORCH IMPORTS!! (Best to keep it on bottom)
 
-class TileWriter:
-    """Helper class that performs IO operations on DB (SQL + FAISS)"""
+
+# FAISS + PyTorch error otherwise bc of OpenMP versioning
+# See: https://github.com/ultralytics/yolov5/issues/5086
+os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
+
+
+class TileDatabaseManager:
+    """
+    Manager for db (FAISS and SQLlite).
+    Important: Since this contains FAISS, it should always go last.
+    Importing torch before FAISS causes segfaults.
+    """
     def __init__(
         self,
         db_path: str,
@@ -65,6 +76,24 @@ class TileWriter:
         """, rows)
 
         self.index.add(embeddings)
+
+    def get_coords(self, uid: int) -> tuple[float, float] | None:
+        """Helper to fetch coords from db."""
+        cursor = self.connection.cursor()
+
+        cursor.execute("""
+            SELECT center_lon, center_lat
+            FROM tiles
+            WHERE id = ?
+            """, (int(uid),))
+
+        return cursor.fetchone()
+
+    def search(self, embedding: np.ndarray, k: int) -> tuple:
+        """Searches for similar embeddings"""
+        faiss.normalize_L2(embedding)
+        scores, uids = self.index.search(embedding, k)
+        return scores, uids
 
     def close(self) -> None:
         """Cleans up connections."""
