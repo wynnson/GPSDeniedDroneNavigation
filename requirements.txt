@@ -1,8 +1,0 @@
-matplotlib
-rasterio
-numpy
-pysqlite3
-faiss-cpu
-torch
-opencv-python
-omegaconf

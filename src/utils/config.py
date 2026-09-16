@@ -7,4 +7,7 @@ def load_config(path: Path | str) -> DictConfig:
     if isinstance(path, str):
         path = Path(path)
 
+    if not path.exists():
+        raise ValueError("Path does not exist on disk")
+
     return OmegaConf.load(path)
