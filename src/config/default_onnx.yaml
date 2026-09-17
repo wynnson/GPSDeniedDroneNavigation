@@ -1,0 +1,24 @@
+model:
+  type: dinov2
+  source: onnx
+  name: dinov2_vits14
+  file_path: models/dinov2_vits14.onnx
+  embedding_dim: 384
+
+raster:
+  file_path: data/GT_NW.tif
+  stride: 400
+  window_size: 512
+  batch_size: 32
+  dst_crs: EPSG:4326
+
+output:
+  db: data/tiles.db
+  faiss: data/tiles.faiss
+
+inference:
+  top_k: 10
+  dist_epsilon: 100
+  score_epsilon: 0.72
+  beta: 10
+  anchor_bonus_weight: .5

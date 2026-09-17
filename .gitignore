@@ -6,7 +6,8 @@
 *.faiss
 *.tif
 
-models/
+models/*.onnx
+models/*.onnx.data
 
 .env
 .venv

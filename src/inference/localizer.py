@@ -1,4 +1,3 @@
-import os
 import cv2
 import numpy as np
 
@@ -79,7 +78,10 @@ class Localizer:
 
 
 if __name__ == "__main__":
-    config_path = Path("src/config/default.yaml")
+    # path = "src/config/default.yaml"
+    path = "src/config/default_onnx.yaml"
+
+    config_path = Path(path)
     config = load_config(config_path)
     device = get_device()
 
@@ -94,4 +96,3 @@ if __name__ == "__main__":
     image = cv2.imread("data/query4.png") # ex
     res = localizer.predict(image)
     print(res)
-
