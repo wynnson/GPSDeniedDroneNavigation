@@ -2,13 +2,12 @@ import cv2
 import torch
 import torch.nn.functional as F
 import numpy as np
-import faiss
 
 from torch import nn
-from src.models.base import BaseModel
+from src.models.base import PreprocessingModel, InferenceModel
 
 
-class DinoV2(BaseModel):
+class DinoV2(PreprocessingModel, InferenceModel):
     def __init__(self, model: nn.Module, device: str):
         self.model = model
         self.device = device

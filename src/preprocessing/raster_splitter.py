@@ -6,7 +6,7 @@ from rasterio.windows import Window, bounds
 from rasterio.warp import transform_bounds
 from pathlib import Path
 
-from src.models.base import BaseModel
+from src.models.base import PreprocessingModel
 from src.database.tile_db_manager import TileDatabaseManager # CONTAINS FAISS
 
 
@@ -57,7 +57,7 @@ def iterate_raster(
 def flush(
     tile_batch: list[np.ndarray],
     metadata_batch: list[dict],
-    model: BaseModel,
+    model: PreprocessingModel,
     db_manager: TileDatabaseManager,
 ) -> None:
     """Flush the batch to DB."""
@@ -76,7 +76,7 @@ def flush(
 
 def embed_raster(
     file_path: str,
-    model: BaseModel,
+    model: PreprocessingModel,
     db_manager: TileDatabaseManager,
     stride: int = 256,
     window_size: int = 512,

@@ -4,7 +4,7 @@ from torch import nn
 from omegaconf import DictConfig
 
 from src.models.dinov2 import DinoV2
-from src.models.base import BaseModel
+from src.models.base import PreprocessingModel
 
 
 def load_model(config: DictConfig, device: str) -> nn.Module:
@@ -27,7 +27,7 @@ def load_model(config: DictConfig, device: str) -> nn.Module:
     return model
 
 
-def create_model(config: DictConfig, device: str) -> BaseModel:
+def create_model(config: DictConfig, device: str) -> PreprocessingModel:
     raw_model = load_model(config, device)
 
     if config.model.type == "dinov2":
