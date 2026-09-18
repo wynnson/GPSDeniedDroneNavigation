@@ -18,7 +18,7 @@ class Localizer:
         self,
         config: DictConfig,
         db_manager: TileDatabaseManager,
-        device: str
+        device: str = None
     ):
         self.device = device
         self.db_manager = db_manager
@@ -77,9 +77,11 @@ class Localizer:
         return float(weighted_lon), float(weighted_lat)
 
 
-if __name__ == "__main__":
-    # path = "src/config/default.yaml"
-    path = "src/config/default_onnx.yaml"
+def main(args=None):
+    if args == "onnx":
+        path = "src/config/default_onnx.yaml"
+    else:
+        path = "src/config/default.yaml"
 
     config_path = Path(path)
     config = load_config(config_path)
@@ -96,3 +98,7 @@ if __name__ == "__main__":
     image = cv2.imread("data/query4.png") # ex
     res = localizer.predict(image)
     print(res)
+
+
+if __name__ == "__main__":
+    main("onnx")

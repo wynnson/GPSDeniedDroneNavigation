@@ -1,16 +1,16 @@
 from pathlib import Path
 
-import torch
-
 from omegaconf import DictConfig
 
 from src.models.dinov2_onnx import DinoV2_ONNX
-from src.models.dinov2 import DinoV2
 from src.models.base import InferenceModel, PreprocessingModel
 
 
 def load_model_torch_hub(config: DictConfig, device: str) -> PreprocessingModel:
     """Loads model from torch hub based on config"""
+    import torch
+    from src.models.dinov2 import DinoV2
+
     if not config.model.repo or not config.model.name:
         raise ValueError("Missing torch hub configuration")
 
@@ -42,7 +42,7 @@ def load_model_onnx(config: DictConfig) -> InferenceModel:
     return model
 
 
-def create_model(config: DictConfig, device: str) -> PreprocessingModel | InferenceModel:
+def create_model(config: DictConfig, device: str = None) -> PreprocessingModel | InferenceModel:
     if not config.model.type:
         raise ValueError(f"Unsupported model type: {config.model.type}")
 

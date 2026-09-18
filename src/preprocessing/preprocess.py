@@ -36,7 +36,7 @@ def preprocess(config: DictConfig, db_manager: TileDatabaseManager):
         print(f"Total: {(db_size + faiss_size) / (1024**2):.4f} MB")
 
 
-if __name__ == "__main__":
+def main(args=None):
     config_path = Path("src/config/default.yaml")
     config = load_config(config_path)
 
@@ -47,3 +47,8 @@ if __name__ == "__main__":
     )
 
     preprocess(config, db_manager)
+
+
+if __name__ == "__main__":
+    main()
+
